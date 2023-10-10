@@ -404,4 +404,4 @@ async def on_message(message):
             await message.channel.send(file=file_data, content='Кукла колдуна')
 
 
-client.run('MTE2MDI1MTY0NDA2MDEwNjc3Mg.GG4ZJ0.2LhSo0ST3Fqva-2YVn9HThzoKx9TA1FZm0JQnI')
+client.run('Токен')
