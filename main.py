@@ -3,7 +3,7 @@ import discord
 
 intents = discord.Intents.default()
 intents.message_content = True
-token = 'MTE2MDI1MTY0NDA2MDEwNjc3Mg.Gtb9HA.O3l_nqSt7NKQvvcSOx8bMMTrWMpdpw8mgpnkLc'
+token = 'token'
 client = discord.Client(intents=intents)
 global song_playing
 song_playing = False
