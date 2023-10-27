@@ -20,7 +20,9 @@ async def on_message(message):
         return
     # Обработка команды "/stop"
     if message.content.startswith('/stop'):
-        for (1161221071308079134) in message.author.roles:
+        role_id = 1121683287467896955
+        author_roles = [role.id for role in message.author.roles]
+        if role_id in author_roles:
             if message.channel.id in is_playing:
                 if is_playing[message.channel.id] == True:
                     is_playing[message.channel.id] = False
