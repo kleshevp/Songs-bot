@@ -19,15 +19,14 @@ async def on_message(message):
     if message.author == bot.user:
         return
     # Обработка команды "/stop"
-    if message.content.startswith('/sto'):
-        if message.role.id in (1161221071308079134):
+    if message.content.startswith('/stop'):
+        for (1161221071308079134) in message.author.roles:
             if message.channel.id in is_playing:
                 if is_playing[message.channel.id] == True:
                     is_playing[message.channel.id] = False
                     message.chann.send('Песня остановлена')
                 else:
-                    message.channel.send('Песня не играет7
-                    ')
+                    message.channel.send('Песня не играет')
             else:
                 await message.channel.send("Песня не играет")
         else:
@@ -67,7 +66,7 @@ async def on_message(message):
 
             # Отправка каждой строки с задержкой в 4 секунды
             for line in lines:
-                if is_playingl[message.channel.id] == True
+                if is_playing[message.channel.id] == True:
                     await message.channel.send(line)
                     time.sleep(4)
                 else:
