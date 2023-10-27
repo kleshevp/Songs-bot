@@ -24,9 +24,9 @@ async def on_message(message):
         author_roles = [role.id for role in message.author.roles]
         if role_id in author_roles:
             if message.channel.id in is_playing:
-                if is_playing[message.channel.id] == True:
+                if is_playing[message.channel.id]:
                     is_playing[message.channel.id] = False
-                    message.chann.send('Песня остановлена')
+                    message.channel.send('Песня остановлена')
                 else:
                     message.channel.send('Песня не играет')
             else:
@@ -68,7 +68,7 @@ async def on_message(message):
 
             # Отправка каждой строки с задержкой в 4 секунды
             for line in lines:
-                if is_playing[message.channel.id] == True:
+                if is_playing[message.channel.id]:
                     await message.channel.send(line)
                     time.sleep(4)
                 else:
