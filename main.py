@@ -11,7 +11,7 @@ is_started = {}
 
 async def send_song(ctx, lines):
     for line in lines:
-        if is_started[ctx]:
+        if ctx.id in is_started and is_started[ctx.id]:
             line = line.strip()  # Удаляем начальные и конечные пробелы
             if line != "":  # Проверяем, что строка не является пустой
                     await ctx.send(line)
@@ -22,9 +22,9 @@ async def send_song(ctx, lines):
             break
 
 async def song(msg, channel, author, title):
-    if not is_started[channel]:
+    if channel.id in is_started and not is_started[channel.id] or channel.id not in is_started:
         # Определяем параметры для запроса к API Musixmatch
-        api_key = 'musixmatchAPI'
+        api_key = 'musixmatchAPI'  # Вставьте ваш ключ API Musixmatch
         base_url = 'http://api.musixmatch.com/ws/1.1/'
         method = 'matcher.lyrics.get'
         params = {
@@ -35,14 +35,14 @@ async def song(msg, channel, author, title):
         response = requests.get(base_url + method, params=params)
         
         if response.status_code == 200:
-            is_started[channel] = True
+            is_started[channel.id] = True
             data = response.json()
             lyrics = data['message']['body']['lyrics']['lyrics_body']
             await channel.send(f'{author} - {title} заказал {msg.author.mention}')
             # Разделение строк текста песни
             lines = lyrics.split('\n')
             await send_song(channel, lines)
-            is_started[channel] = False
+            is_started[channel.id] = False
         else:
             await channel.send('Песня не найдена.')
     else:
@@ -63,13 +63,13 @@ async def on_message(message):
         role_id = 1161221071308079134 or 1141065075533303918 or 1139273927290523728 or 1139998310652969140
         role = discord.utils.get(message.guild.roles, id=role_id)
         if role in message.author.roles:
-            is_started[message.channel] = False
+            is_started[message.channel.id] = False
             await message.channel.send("Песня остановлена.")
     else:
         pass
 @bot.command()
 async def test(ctx):
-    if not is_started[ctx]:
+    if ctx.id in is_started and not is_started[ctx.id]:
         await ctx.send('Бот работает и готов к использованию!')
 
 
