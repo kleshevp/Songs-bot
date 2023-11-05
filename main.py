@@ -10,6 +10,17 @@ intents.presences = False
 global is_started
 is_started = False
 
+async def send_song(lines):
+    for line in lines:
+        line = line.strip()  # Удаляем начальные и конечные пробелы
+        if line != "":  # Проверяем, что строка не является пустой
+            if is_started:
+                await channel.send(line)
+                await asyncio.sleep(4)
+            else:
+                break
+        else:
+            pass
 async def song(msg, channel, author, title):
     global is_started
     if not is_started:
@@ -31,17 +42,7 @@ async def song(msg, channel, author, title):
             await channel.send(f'{author} - {title} заказал {msg.author.mention}')
             # Разделение строк текста песни
             lines = lyrics.split('\n')
-            # Отправка каждой непустой строки с задержкой в 4 секунды
-            for line in lines:
-                line = line.strip()  # Удаляем начальные и конечные пробелы
-                if line != "":  # Проверяем, что строка не является пустой
-                    if is_started:
-                        await channel.send(line)
-                        await asyncio.sleep(4)
-                    else:
-                        pass
-                else:
-                    pass
+            asyncio.run(send_song(lines))
             is_started = False
         else:
             await channel.send('Песня не найдена.')
@@ -56,11 +57,14 @@ async def on_message(message):
     if message.content.startswith('/song'):
         msg = message.content.split('/song ')[1]  # Получаем название песни из сообщения
         author, title = msg.split("-", 1)
-        await song(message, message.channel, author, title)
+        asyncio.run(song(message, message.channel, author, title))
 @bot.command()
 async def test(ctx):
     await ctx.send('Бот работает и готов к использованию!')
-
+@bot.command()
+@command.has_any_role('1141065075533303918', '1139273927290523728', '1139998310652969140')
+async def stop(ctx):
+    is_started = False
 
 
 bot.run('Discord bot api')
