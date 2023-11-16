@@ -20,11 +20,12 @@ async def send_song(ctx, lines):
                 pass
         else:
             break
+    is_started[ctx.id] = False
 
 async def song(msg, channel, author, title):
     if channel.id in is_started and not is_started[channel.id] or channel.id not in is_started:
         # Определяем параметры для запроса к API Musixmatch
-        api_key = 'MMAPI'  # Вставьте ваш ключ API Musixmatch
+        api_key = 'MusixMatch API'  # Вставьте ваш ключ API Musixmatch
         base_url = 'http://api.musixmatch.com/ws/1.1/'
         method = 'matcher.lyrics.get'
         params = {
@@ -39,13 +40,14 @@ async def song(msg, channel, author, title):
             data = response.json()
             lyrics = data['message']['body']['lyrics']['lyrics_body']
             await channel.send(f'{author} - {title} заказал(-а) {msg.author.mention}')
+            lyrics = lyrics.rsplit('\n', 3)[0]
             # Разделение строк текста песни
             lines = lyrics.split('\n')
-            lyrics = lyrics[:-3]
             await send_song(channel, lines)
-            is_started[channel.id] = False
+            await channel.send("Не забудьте отблагодарить banan890 и Павел печеньками")
         else:
             await channel.send('Песня не найдена.')
+            is_started[channel.id] = False
     else:
         pass
 
@@ -60,7 +62,7 @@ async def on_message(message):
         msg = message.content.split('/song ')[1]
         author, title = msg.split("-", 1)
         await song(message, message.channel, author, title)
-    elif message.content.startswith('/stop'):
+    elif message.content.startswith('/stop_song'):
         role_id = 1161221071308079134 or 1141065075533303918 or 1139273927290523728 or 1139998310652969140
         role = discord.utils.get(message.guild.roles, id=role_id)
         if role in message.author.roles:
@@ -73,4 +75,4 @@ async def on_message(message):
         pass
 
 
-bot.run('DAPI')
+bot.run('Discord API')
