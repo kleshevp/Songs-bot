@@ -30,6 +30,6 @@
 # GitHub
 **https://github.com/kleshevp/Songs-bot** 🤖
 # Ссылка-приглашение
-**https://discord.com/api/oauth2/authorize?client_id=1160251644060106772&permissions=274877974528&scope=bot**
+**https://discord.com/oauth2/authorize?client_id=1160251644060106772&permissions=277025523712&integration_type=0&scope=bot**
 
 ![A banner with musical instruments on a red background(copied)](https://github.com/user-attachments/assets/78e8e162-defb-4cdd-b15c-55b31f6e8f93)
