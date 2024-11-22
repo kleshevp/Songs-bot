@@ -3,12 +3,29 @@ from disnake import Embed
 import asyncio
 from disnake.ext import commands
 import json
-import requests
 from bs4 import BeautifulSoup as Soup
 import re
+import aiohttp
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+import requests
+
+# Конфигурация прокси(для Spotify в России)
+proxy_url = 'socks5h://user:password@ip:port'
+proxies = {'http': proxy_url, 'https': proxy_url}
 
 
-def search_data(query: str):
+async def get_json_data(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            return await response.json()
+
+async def get_text_data(path):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(path) as response:
+            return await response.text()
+
+async def search_data(query: str):
     """
     Returns song data or raises FileNotFound error
     res = {
@@ -21,7 +38,7 @@ def search_data(query: str):
     query = query.replace('  ', ' ').replace(' ', '+').replace('&', '%26').replace('-', '')
     url = f"https://genius.com/api/search/multi?q={query}"
     try:
-        data = requests.get(url).json()
+        data = await get_json_data(url)
     except:
         raise ConnectionError
     if data['meta']['status'] != 200:
@@ -51,12 +68,12 @@ def clean_lyrics(s: str) -> str:
     return s
 
 
-def get_lyrics(path: str) -> str:
+async def get_lyrics(path: str) -> str:
     """
     Takes url as path to lyrics
     Returns str of song lyrics
     """
-    data = requests.get(path).text
+    data = await get_text_data(path)
     soup = Soup(data, 'lxml')
     soup = soup.find('div', {'id': 'lyrics-root'})
     lyrics = ''
@@ -65,7 +82,7 @@ def get_lyrics(path: str) -> str:
     return clean_lyrics(lyrics)
 
 
-def search(query: str):
+async def search(query: str):
     """
     Takes string query that contains song name and author
     Return dictionary with results
@@ -78,8 +95,10 @@ def search(query: str):
         'lyrics': song lyrics
     }
     """
-    s_data = search_data(query)
-    s_data['lyrics'] = get_lyrics(s_data['lyrics_path'])
+    s_data = await search_data(query)
+    s_data['lyrics'] = await (
+
+        get_lyrics(s_data['lyrics_path']))
     return s_data
 
 
@@ -97,17 +116,27 @@ command_sync_flags.sync_commands_debug = True
 token = None
 names1 = None
 deny_list = None
+spotify_client_id = None
+spotify_client_secret = None
 
 with open('config.json', 'r', encoding='utf-8') as f:  # открыли файл с данными
     text = json.load(f)  # загнали все, что получилось в переменную
     token = text['token']
     namesl = text['activity_name']
+    seconds = text['seconds']
+    spotify_client_id = text['spotify_client_id']
+    spotify_client_secret = text['spotify_client_secret']
 
 with open('deny_list.json', 'r', encoding='utf-8') as f:  # открыли файл с данными
     text = json.load(f)  # загнали все, что получилось в переменную
     deny_list = text['deny_list']
 
 
+sp = spotipy.Spotify(
+    auth_manager=SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_client_secret),
+    proxies=proxies,
+    requests_session=requests.Session()
+)
 
 activity = disnake.Activity(
     name=namesl,
@@ -123,7 +152,7 @@ async def send_song(ctx, lines):
             line = line.strip()  # Удаляем начальные и конечные пробелы
             if line != "":  # Проверяем, что строка не является пустой
                 await ctx.send(line)
-                await asyncio.sleep(2.5)
+                await asyncio.sleep(seconds)
             else:
                 pass
         else:
@@ -133,11 +162,21 @@ async def send_song(ctx, lines):
 
 async def song_exe(msg, channel, author, title):
     if channel.id in is_started and not is_started[channel.id] or channel.id not in is_started:
+        q = author+" "+title
         try:
-            song_data = search(author+" "+title)
+            song_data = await search(q)
         except Exception as ex:
-            await channel.send(f'Песня не найдена. 111 {ex}')
-            is_started[channel.id] = False
+            try:
+                results = sp.search(q=q, type='track', limit=1)
+                if results['tracks']['items']:
+                    track = results['tracks']['items'][0]
+                    track_name = track['name']
+                    track_artists = ', '.join([artist['name'] for artist in track['artists']])
+                    song_data = await search(track_artists + track_name)
+            except Exception as ex:
+                print(ex)
+                await channel.send(f'Песня не найдена. 111 {ex}')
+                is_started[channel.id] = False
         else:
             await channel.send(f'{song_data["author"]} - {song_data["title"]} заказал(-а) {msg.author.mention}')
             lines = song_data['lyrics'].split('\n')
@@ -145,7 +184,7 @@ async def song_exe(msg, channel, author, title):
             await send_song(channel, lines)
             await channel.send(
                 embed=Embed(
-                description="Не забудьте отблагодарить banan890, Павел, Grisharik, yanesytortik печеньками",
+                description="Не забудьте отблагодарить banan890, Павел, Grisharik, YaNesyTortik печеньками",
                 color=disnake.Color.gold()
                 )
             )
@@ -175,7 +214,7 @@ async def stop_song(ctx):
 
 @bot.slash_command(description='Add ID to deny list')
 async def deny(ctx, option: str, id: str):
-    if ctx.author.id == 994578923121807370:
+    if ctx.author.id == 994578923121807370 or 814932720584228874:
         sid = int(id)
         with open('deny_list.json', 'r') as file:
             data = json.load(file)
@@ -207,7 +246,7 @@ async def info_song(ctx):
         if ctx.channel.id in is_started and is_started[
             ctx.channel.id] == False or ctx.channel.id not in is_started:
             await ctx.response.send_message(
-                "GitHub: https://github.com/kleshevp/Songs-bot 🤖\nCommunication with developers (Discord):\n@kleshevp - Программист(логика программы) 🧑‍💻\n@banan890#8186 - менеджер проекта 🍌\n@nikki0451 - Программист(логика программы) 👨‍💻\n@grisharik - /команды\n@yanesytortik - API и много чего ещё\n\nTry my commands:\n/song `Author's name` `song name`\n/info_song\n/stop {Stops the song/For server staff only}")
+                "GitHub: https://github.com/kleshevp/Songs-bot 🤖\nDiscord: https://discord.gg/B2aFBK2akw\nCommunication with developers (Discord):\n@kleshevp - Программист(логика программы) 🧑‍💻\n@banan890#8186 - менеджер проекта 🍌\n@nikki0451 - Программист(логика программы) 👨‍💻\n@grisharik - /команды\n@yanesytortik - API и много чего ещё\n\nTry my commands:\n/song `Author's name` `song name`\n/info_song\n/stop {Stops the song/For server staff only}")
         else:
             pass
 
